@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    container_name: dealership-erp-db
+    environment:
+      POSTGRES_DB: concesionario
+      POSTGRES_USER: ${DB_USER:-concesionario}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env (ver .env.example)}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-concesionario} -d concesionario"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

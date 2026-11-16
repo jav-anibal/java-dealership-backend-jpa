@@ -1,101 +1,79 @@
-# ERP Concesionario — JPA / Hibernate / MySQL
+# Dealership ERP API
 
-Proyecto Java centrado en persistencia relacional y modelado de dominio con JPA/Hibernate.
+Java backend for a car dealership ERP: JPA/Hibernate domain model (dealerships, cars, equipment, repairs, sales), transactional services and JPQL reports, exposed as a REST API documented with Swagger/OpenAPI.
 
 ## Stack
 
-- Java 24
-- Hibernate 6.4
-- Jakarta Persistence (JPA) 3.1
-- MySQL
-- Maven
-
-## Qué modela
-
-El sistema gestiona concesionarios, vehículos, equipamiento, reparaciones, propietarios y ventas.
-
-Incluye relaciones:
-
-- 1:N entre concesionario y vehículos;
-- N:M entre vehículos y equipamientos;
-- 1:N entre vehículos y reparaciones;
-- 1:1 entre vehículo y venta;
-- 1:N entre propietario y ventas.
+- Java 21 · Spring Boot 3.5 (Web, Data JPA, Validation, Actuator)
+- Hibernate 6 / Jakarta Persistence
+- PostgreSQL 16 · Flyway (versioned migrations)
+- springdoc-openapi (Swagger UI)
+- JUnit 5 + MockMvc + H2 (PostgreSQL mode)
 
 ## Arquitectura
 
 ```text
-UI de consola
-     |
-Servicios
-     |
-EntityManager / JPA
-     |
-Hibernate
-     |
-MySQL
+Controller (REST + validación)  ->  Service (@Transactional)  ->  Repository (Spring Data JPA)  ->  PostgreSQL
+            DTOs (records)                reglas de negocio              JPQL                       Flyway
 ```
 
-La lógica de acceso a datos y las consultas JPQL se concentran en servicios, manteniendo separadas la presentación y la persistencia.
+## Modelo
 
-## Casos trabajados
+- 1:N concesionario → coches
+- N:M coches ↔ equipamientos
+- 1:N coche → reparaciones (cada una hecha por un mecánico)
+- 1:1 coche ↔ venta (`UNIQUE` en BD: un coche no se vende dos veces)
+- 1:N propietario → ventas (el comprador se reutiliza por DNI)
 
-- gestión de stock;
-- alta de concesionarios y vehículos;
-- instalación de equipamientos;
-- registro de reparaciones;
-- ventas;
-- consultas agregadas con JPQL;
-- control manual de transacciones y rollback;
-- validaciones de entrada.
-
-## Consultas JPQL
-
-Ejemplos incluidos en el proyecto:
-
-```java
-SELECT c FROM Coche c
-WHERE c.concesionario.id = :id
-AND c.venta IS NULL
-```
-
-```java
-SELECT SUM(v.precioFinal) FROM Venta v
-WHERE v.concesionario.id = :id
-```
-
-```java
-SELECT COALESCE(SUM(e.precioUnit), 0) FROM Coche c
-JOIN c.equipamientos e
-WHERE c.matricula = :matricula
-```
-
-## Ejecución
-
-Requisitos:
-
-- Java 24
-- Maven
-- MySQL
-
-Configurar la conexión en:
-
-```text
-src/main/resources/META-INF/persistence.xml
-```
-
-Después:
+## Ejecutar
 
 ```bash
-mvn clean compile
-mvn exec:java -Dexec.mainClass="org.backend.Main"
+cp .env.example .env            # y cambia DB_PASSWORD
+docker compose up -d            # PostgreSQL
+export DB_PASSWORD=...          # la misma clave del .env
+mvn spring-boot:run -Dspring-boot.run.profiles=demo   # "demo" carga datos de ejemplo
 ```
 
-## Objetivo del proyecto
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+- Health: <http://localhost:8080/actuator/health>
 
-Proyecto desarrollado durante 2º DAM para profundizar en persistencia relacional, JPA/Hibernate, modelado de entidades, relaciones y consultas JPQL.
+Tests (no necesitan PostgreSQL, usan H2):
+
+```bash
+mvn test
+```
+
+## Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST / GET | `/api/concesionarios` | Alta / listado |
+| GET | `/api/concesionarios/{id}` | Detalle |
+| GET | `/api/concesionarios/{id}/stock` | Coches sin vender |
+| GET | `/api/concesionarios/{id}/ventas` | Ventas del concesionario |
+| GET | `/api/concesionarios/{id}/recaudacion` | Total recaudado |
+| POST / GET | `/api/coches` | Alta / listado (`?concesionarioId=`) |
+| GET | `/api/coches/{matricula}` | Detalle |
+| POST | `/api/coches/{matricula}/equipamientos/{id}` | Instalar extra → precio total |
+| POST | `/api/coches/{matricula}/reparaciones` | Registrar reparación |
+| GET | `/api/coches/{matricula}/coste-actual` | Compra + reparaciones + extras (solo vendidos) |
+| POST / GET | `/api/equipamientos` | Alta / listado |
+| POST / GET | `/api/mecanicos` | Alta / listado |
+| GET | `/api/mecanicos/{id}/reparaciones` | Historial (más recientes primero) |
+| POST | `/api/ventas` | Vender un coche |
+| GET | `/api/ventas/{id}` | Detalle de venta |
+
+Errores en formato RFC 7807 (`application/problem+json`): `400` validación (con detalle por campo), `404` recurso inexistente, `409` conflicto (coche ya vendido, matrícula duplicada).
+
+## Decisiones
+
+- Esquema gestionado por Flyway; Hibernate solo valida (`ddl-auto=validate`).
+- Credenciales por variables de entorno, sin valores por defecto en el repositorio.
+- Sin entidades en la API: DTOs como `record` con Bean Validation.
+- `open-in-view` desactivado; relaciones `LAZY` mapeadas a DTO dentro de la transacción.
+- Origen: proyecto de consola de 2º DAM (JPA/Hibernate puro); el historial de git conserva esa versión.
 
 ---
 
-**Anibal Solano**  
-Backend Developer · Java · Spring Boot · PostgreSQL
+**Anibal Solano** · Backend Developer · Java · Spring Boot · PostgreSQL
