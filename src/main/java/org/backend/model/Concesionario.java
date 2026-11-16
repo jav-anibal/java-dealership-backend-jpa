@@ -1,6 +1,5 @@
 package org.backend.model;
 
-
 import jakarta.persistence.*;
 
 @Entity
@@ -9,23 +8,21 @@ public class Concesionario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; //-> PK
-    @Column(length = 20, nullable = false)
+    private Long id;
+
+    @Column(length = 100, nullable = false)
     private String nombre;
-    @Column(length = 40, nullable = false)
+
+    @Column(length = 150, nullable = false)
     private String direccion;
 
-    // CONSTRUCTORES ----------------------------------------------------------->
-
-    public Concesionario() {
+    protected Concesionario() {
     }
 
     public Concesionario(String nombre, String direccion) {
         this.nombre = nombre;
         this.direccion = direccion;
     }
-
-    // GETTERS ----------------------------------------------------------->
 
     public Long getId() {
         return id;
@@ -37,31 +34,5 @@ public class Concesionario {
 
     public String getDireccion() {
         return direccion;
-    }
-
-
-    // SETTERS ----------------------------------------------------------->
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
-
-
-    @Override
-    public String toString() {
-        return "Concesionario{" +
-                "id=" + id +
-                ", nombre='" + nombre + '\'' +
-                ", direccion='" + direccion + '\'' +
-                '}';
     }
 }

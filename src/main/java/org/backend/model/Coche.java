@@ -3,52 +3,52 @@ package org.backend.model;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "coches")
 public class Coche {
+
     @Id
-    @Column(length = 7, updatable = false) //-> la clave no puede cambiar una vez insertada
-    private String matricula; // PK
+    @Column(length = 7, updatable = false)
+    private String matricula;
+
     @Column(length = 32, nullable = false)
     private String marca;
+
     @Column(length = 32, nullable = false)
     private String modelo;
-    @Column
+
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal precioBase;
 
-    // RELACIONES ------------------------------------------------------>
-    // Un coche pertenece a un concesionario
-    @ManyToOne //-> Relación N:1
-    @JoinColumn(name = "concesionario_id")
-    private Concesionario concesionario; // Referencia -> FK
-    // Un coche puede tener muchos equipamientos
+    // N:1 - un coche pertenece a un concesionario
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "concesionario_id", nullable = false)
+    private Concesionario concesionario;
 
-    @ManyToMany//-> Relación N:M
+    // N:M - tabla intermedia coche_equipamiento
+    @ManyToMany
     @JoinTable(
             name = "coche_equipamiento",
             joinColumns = @JoinColumn(name = "coche_matricula"),
             inverseJoinColumns = @JoinColumn(name = "equipamiento_id")
-    )//-> Representa la creación de una nueva tabla,
-    // ya que una relación muchos-a-muchos,
-    // las bases de datos relacionales
-    // no pueden representarse directamente
-    // con solo dos tablas (necesitan una tabla intermedia para unirlas)
+    )
     private Set<Equipamiento> equipamientos = new HashSet<>();
 
-    //Un coche puede ser reparado por muchos mecánicos
-    @OneToMany(mappedBy = "coche") //-> Relación 1:N - mappedBY: apunta al atributo que tiene la FK
+    // 1:N - lado inverso; la FK vive en Reparacion
+    @OneToMany(mappedBy = "coche")
     private List<Reparacion> reparaciones = new ArrayList<>();
 
-    @OneToOne(mappedBy = "coche") // -> 1:1
+    // 1:1 - lado inverso; la FK (unique) vive en Venta
+    @OneToOne(mappedBy = "coche")
     private Venta venta;
 
-
-    // CONSTRUCTORES ----------------------------------------------------------->
-
-    public Coche() {
+    protected Coche() {
     }
 
     public Coche(String matricula, String marca, String modelo, BigDecimal precioBase, Concesionario concesionario) {
@@ -58,9 +58,6 @@ public class Coche {
         this.precioBase = precioBase;
         this.concesionario = concesionario;
     }
-
-    // GETTERS ----------------------------------------------------------->
-
 
     public String getMatricula() {
         return matricula;
@@ -94,55 +91,23 @@ public class Coche {
         return venta;
     }
 
-
-    // SETTERS ----------------------------------------------------------->
-
-
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
-    }
-
-    public void setMarca(String marca) {
-        this.marca = marca;
-    }
-
-    public void setModelo(String modelo) {
-        this.modelo = modelo;
-    }
-
-    public void setPrecioBase(BigDecimal precioBase) {
-        this.precioBase = precioBase;
-    }
-
-    public void setConcesionario(Concesionario concesionario) {
-        this.concesionario = concesionario;
-    }
-
-    public void setEquipamientos(Set<Equipamiento> equipamientos) {
-        this.equipamientos = equipamientos;
-    }
-
-    public void setReparaciones(List<Reparacion> reparaciones) {
-        this.reparaciones = reparaciones;
-    }
-
     public void setVenta(Venta venta) {
         this.venta = venta;
     }
 
-    // EQUALS & HASHCODE ----------------------------------------------------------->
+    public boolean isVendido() {
+        return venta != null;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Coche)) return false;
-        Coche coche = (Coche) o;
+        if (!(o instanceof Coche coche)) return false;
         return Objects.equals(matricula, coche.matricula);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(matricula);
+        return Objects.hashCode(matricula);
     }
-
 }

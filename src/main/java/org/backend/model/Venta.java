@@ -6,32 +6,33 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name="ventas")
+@Table(name = "ventas")
 public class Venta {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column
+
+    @Column(nullable = false)
     private LocalDate fecha;
-    @Column
+
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal precioFinal;
 
-    //RELACIONES
-    @OneToOne
-    @JoinColumn(name = "coche_matricula")
-    private Coche coche; // Uno a uno -> 1:1
+    // 1:1 - unique: la base de datos impide vender dos veces el mismo coche
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "coche_matricula", nullable = false, unique = true)
+    private Coche coche;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "propietario_id", nullable = false)
-    private Propietario propietario; // Muchos a uno -> N:1
+    private Propietario propietario;
 
-    @ManyToOne
-    @JoinColumn(name = "concesionario_id",nullable = false)
-    private Concesionario concesionario; // Muchos a uno -> N:1
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "concesionario_id", nullable = false)
+    private Concesionario concesionario;
 
-    // CONSTRUCTORES ----------------------------------------------------------->
-
-    public Venta() {
+    protected Venta() {
     }
 
     public Venta(LocalDate fecha, BigDecimal precioFinal, Coche coche, Propietario propietario, Concesionario concesionario) {
@@ -41,8 +42,6 @@ public class Venta {
         this.propietario = propietario;
         this.concesionario = concesionario;
     }
-
-    // GETTERS ----------------------------------------------------------->
 
     public Long getId() {
         return id;
@@ -67,34 +66,4 @@ public class Venta {
     public Concesionario getConcesionario() {
         return concesionario;
     }
-
-
-    // SETTERS ----------------------------------------------------------->
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setFecha(LocalDate fecha) {
-        this.fecha = fecha;
-    }
-
-    public void setPrecioFinal(BigDecimal precioFinal) {
-        this.precioFinal = precioFinal;
-    }
-
-    public void setCoche(Coche coche) {
-        this.coche = coche;
-    }
-
-    public void setPropietario(Propietario propietario) {
-        this.propietario = propietario;
-    }
-
-    public void setConcesionario(Concesionario concesionario) {
-        this.concesionario = concesionario;
-    }
-
-
 }

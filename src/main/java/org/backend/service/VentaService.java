@@ -1,69 +1,61 @@
 package org.backend.service;
 
-import jakarta.persistence.EntityManager;
+import org.backend.dto.VentaRequest;
+import org.backend.dto.VentaResponse;
+import org.backend.exception.ConflictException;
+import org.backend.exception.ResourceNotFoundException;
 import org.backend.model.Coche;
-import org.backend.model.Concesionario;
 import org.backend.model.Propietario;
 import org.backend.model.Venta;
+import org.backend.repository.CocheRepository;
+import org.backend.repository.PropietarioRepository;
+import org.backend.repository.VentaRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Service
+@Transactional(readOnly = true)
 public class VentaService {
 
-    //==========================================================
-    // PUNTO 4.1 -> VENDER COCHE
-    // ==========================================================
+    private final VentaRepository ventas;
+    private final CocheRepository coches;
+    private final PropietarioRepository propietarios;
 
-    public static void venderCoche(String dni, String nombrePropietario,
-                                   String matricula, Long idConcesionario,
-                                   BigDecimal precioFinal) {
+    public VentaService(VentaRepository ventas, CocheRepository coches, PropietarioRepository propietarios) {
+        this.ventas = ventas;
+        this.coches = coches;
+        this.propietarios = propietarios;
+    }
 
-        EntityManager conexion = null;
-        try {
-            conexion = GestorEntityManager.getEntityManager();
-            conexion.getTransaction().begin();
+    /**
+     * Vende un coche. Una sola transaccion: si algo falla no se crea ni propietario ni venta.
+     * El concesionario de la venta es el del coche. Un comprador existente (mismo DNI) se reutiliza.
+     */
+    @Transactional
+    public VentaResponse vender(VentaRequest req) {
+        String matricula = req.matricula().trim().toUpperCase();
+        String dni = req.dniComprador().trim().toUpperCase();
 
-            // 1. Buscar coche por matrícula
-            Coche coche = conexion.find(Coche.class, matricula);
-            if (coche == null) {
-                throw new ApplicationException("No existe coche con matrícula: " + matricula);
-            }
-
-            // 2. Verificar que el coche NO esté vendido
-            if (coche.getVenta() != null) {
-                throw new ApplicationException("El coche con matrícula " + matricula + " ya está vendido");
-            }
-
-            // 3. Buscar concesionario por ID
-            Concesionario concesionario = conexion.find(Concesionario.class, idConcesionario);
-            if (concesionario == null) {
-                throw new ApplicationException("No existe concesionario con ID: " + idConcesionario);
-            }
-
-            // 4. Crear nuevo propietario
-            Propietario propietario = new Propietario(dni, nombrePropietario);
-            conexion.persist(propietario);
-
-            // 5. Crear la venta con fecha actual
-            Venta venta = new Venta(LocalDate.now(), precioFinal, coche, propietario, concesionario);
-            conexion.persist(venta);
-
-            conexion.getTransaction().commit();
-            System.out.println(" VENTA REALIZADA CORRECTAMENTE ");
-            System.out.println(" Coche: " + matricula + " | Comprador: " + nombrePropietario + " | Precio: " + precioFinal + " €");
-
-        } catch (ApplicationException e) {
-            if (conexion != null && conexion.getTransaction().isActive()) {
-                conexion.getTransaction().rollback();
-            }
-            throw e;
-        } catch (Exception e) {
-            if (conexion != null && conexion.getTransaction().isActive()) {
-                conexion.getTransaction().rollback();
-            }
-            throw new ApplicationException("ERROR AL REALIZAR VENTA: " + e.getMessage());
+        Coche coche = coches.findById(matricula)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe coche con matricula: " + matricula));
+        if (coche.isVendido()) {
+            throw new ConflictException("El coche con matricula " + matricula + " ya esta vendido");
         }
 
+        Propietario propietario = propietarios.findByDni(dni)
+                .orElseGet(() -> propietarios.save(new Propietario(dni, req.nombreComprador())));
+
+        Venta venta = ventas.save(new Venta(LocalDate.now(), req.precioFinal(), coche, propietario,
+                coche.getConcesionario()));
+        coche.setVenta(venta);
+        return VentaResponse.from(venta);
+    }
+
+    public VentaResponse obtener(Long id) {
+        return ventas.findById(id)
+                .map(VentaResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe venta con ID: " + id));
     }
 }

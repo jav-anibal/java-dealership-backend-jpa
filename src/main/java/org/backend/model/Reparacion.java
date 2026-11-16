@@ -8,29 +8,29 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "reparaciones")
 public class Reparacion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column
+
+    @Column(nullable = false)
     private LocalDate fecha;
-    @Column
+
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal coste;
+
     @Column(length = 255, nullable = false)
     private String descripcion;
 
-    //RELACIONES
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "coche_matricula", nullable = false)
-    private Coche coche; // Muchos a uno -> N:1
-    @ManyToOne
+    private Coche coche;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "mecanico_id", nullable = false)
-    private Mecanico mecanico; // Muchos a uno -> N:1
+    private Mecanico mecanico;
 
-
-    // CONSTRUCTORES ----------------------------------------------------------->
-
-
-    public Reparacion() {
+    protected Reparacion() {
     }
 
     public Reparacion(LocalDate fecha, BigDecimal coste, String descripcion, Coche coche, Mecanico mecanico) {
@@ -40,9 +40,6 @@ public class Reparacion {
         this.coche = coche;
         this.mecanico = mecanico;
     }
-
-
-    // GETTERS ----------------------------------------------------------->
 
     public Long getId() {
         return id;
@@ -67,35 +64,4 @@ public class Reparacion {
     public Mecanico getMecanico() {
         return mecanico;
     }
-
-
-    // SETTERS ----------------------------------------------------------->
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setFecha(LocalDate fecha) {
-        this.fecha = fecha;
-    }
-
-    public void setCoste(BigDecimal coste) {
-        this.coste = coste;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public void setCoche(Coche coche) {
-        this.coche = coche;
-    }
-
-    public void setMecanico(Mecanico mecanico) {
-        this.mecanico = mecanico;
-    }
-
-
-
 }

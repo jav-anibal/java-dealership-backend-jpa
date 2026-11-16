@@ -11,23 +11,20 @@ public class Propietario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(length = 9, nullable = false)
+
+    @Column(length = 9, nullable = false, unique = true)
     private String dni;
-    @Column(length = 20, nullable = false)
+
+    @Column(length = 100, nullable = false)
     private String nombre;
 
-    // CONSTRUCTORES ----------------------------------------------------------->
-
-    public Propietario() {
+    protected Propietario() {
     }
 
     public Propietario(String dni, String nombre) {
-
         this.dni = dni;
         this.nombre = nombre;
     }
-
-    // GETTERS ----------------------------------------------------------->
 
     public Long getId() {
         return id;
@@ -40,25 +37,6 @@ public class Propietario {
     public String getNombre() {
         return nombre;
     }
-
-
-    // SETTERS ----------------------------------------------------------->
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setDni(String dni) {
-        this.dni = dni;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    // EQUALS & HASHCODE ----------------------------------------------------------->
-
 
     @Override
     public boolean equals(Object o) {

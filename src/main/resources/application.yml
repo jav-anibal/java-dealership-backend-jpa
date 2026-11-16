@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: dealership-erp-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/concesionario}
+    username: ${DB_USER:concesionario}
+    password: ${DB_PASSWORD}   # sin valor por defecto: se define por variable de entorno
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate       # el esquema lo gestiona Flyway (db/migration)
+  flyway:
+    enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
